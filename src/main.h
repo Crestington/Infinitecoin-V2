@@ -37,6 +37,7 @@ static const int64 MAX_MONEY = 550000000000 * COIN;	// max
 static const int64 MAX_MINT_PROOF_OF_WORK = 5000000 * COIN;
 static const int64 MAX_MINT_PROOF_OF_WORK_LEGACY = 5000000 * COIN;
 static const int64 MAX_MINT_PROOF_OF_STAKE = 0.5 * CENT;
+static const int MAX_TIME_SINCE_BEST_BLOCK = 10; // how many seconds to wait before sending next PushGetBlocks()
 
 static const int64 MIN_TXOUT_AMOUNT = MIN_TX_FEE;
 static const unsigned int PROTOCOL_SWITCH_TIME = 1371686400; // 20 Jun 2013 00:00:00

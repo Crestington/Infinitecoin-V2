@@ -3010,6 +3010,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
         cPeerBlockCounts.input(pfrom->nStartingHeight);
 
+        // Be more aggressive with blockchain download. Send new getblocks() message after connection 
+        // to new node if waited longer than MAX_TIME_SINCE_BEST_BLOCK. 
+        int64 TimeSinceBestBlock = GetTime() - nTimeBestReceived; 
+        if (TimeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK) { 
+            printf("INFO: Waiting %"PRId64" sec which is too long. Sending GetBlocks(0)\n", TimeSinceBestBlock); 
+            pfrom->PushGetBlocks(pindexBest, uint256(0)); 
+        } 
+ 
         // ppcoin: ask for pending sync-checkpoint if any
         if (!IsInitialBlockDownload())
             Checkpoints::AskForPendingSyncCheckpoint(pfrom);
@@ -3232,7 +3240,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         // Send the rest of the chain
         if (pindex)
             pindex = pindex->pnext;
-        int nLimit = 500;
+        int nLimit = 1500;
         printf("getblocks %d to %s limit %d\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str(), nLimit);
         for (; pindex; pindex = pindex->pnext)
         {
@@ -3384,8 +3392,17 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
         printf("received block %s\n", block.GetHash().ToString().substr(0,20).c_str());
         // block.print();
 
-        CInv inv(MSG_BLOCK, block.GetHash());
+        CInv inv(MSG_BLOCK, block.GetHash()); {
         pfrom->AddInventoryKnown(inv);
+        } else { 
+            // Be more aggressive with blockchain download. Send getblocks() message after 
+            // an error related to new block download. 
+            int64 TimeSinceBestBlock = GetTime() - nTimeBestReceived; 
+            if (TimeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK) { 
+                printf("INFO: Waiting %"PRId64" sec which is too long. Sending GetBlocks(0)\n", TimeSinceBestBlock); 
+                pfrom->PushGetBlocks(pindexBest, uint256(0)); 
+            } 
+        } 
 
         if (ProcessBlock(pfrom, &block))
             mapAlreadyAskedFor.erase(inv);
